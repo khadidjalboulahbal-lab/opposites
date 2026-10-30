@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Opposites Quiz</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap">
+<style>
+:root{--bg:#f9f9f9;--card:#ffffff;--ink:#0b2e5e;--mute:#4b5d78;--a:#ed1c24;--b:#0a7cff;--line:#e6e6e6;--ok:#00a651;--bad:#ed1c24;--sun:#ffbe0b;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1a2b3f;--card:#0b2e5e;--ink:#f9f9f9;--mute:#cdebff;--a:#ffbe0b;--b:#00aeff;--line:#2b4d7d;--ok:#2ecf7a;--bad:#ff6b70}}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Bricolage Grotesque",system-ui,sans-serif;line-height:1.4;display:flex;align-items:center;justify-content:center}
+main{width:100%;max-width:560px;padding:16px}
+.top{display:flex;justify-content:space-between;font-weight:600;color:var(--mute);margin-bottom:8px}
+.track{height:8px;background:var(--line);border-radius:8px;overflow:hidden;margin-bottom:16px}
+.fill{height:100%;width:0;background:var(--sun);transition:width .3s}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px}
+.q{font-size:1.6rem;font-weight:800;margin:0 0 6px;letter-spacing:-.01em}
+.q b{color:var(--a)}
+.q .gap{display:inline-block;min-width:3.2ch;border-bottom:3px solid var(--b);text-align:center;color:var(--b)}
+.pic{font-size:2.4rem;margin:0 0 6px}
+.tile{display:block;width:100%;padding:12px;margin-top:8px;border:2px solid var(--line);background:var(--card);color:var(--ink);font:600 1.15rem inherit;font-family:inherit;border-radius:12px;cursor:pointer;text-align:left}
+.tile:hover:not(:disabled){border-color:var(--b)}
+.tile:disabled{cursor:default}
+.tile.ok{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 14%,var(--card))}
+.tile.no{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,var(--card))}
+button:focus-visible{outline:3px solid var(--b);outline-offset:2px}
+.msg{min-height:1.5em;font-weight:600;margin:12px 0 4px}
+.go{border:0;background:var(--ink);color:var(--bg);font:700 1rem inherit;font-family:inherit;padding:10px 20px;border-radius:12px;cursor:pointer;box-shadow:0 3px 0 var(--sun)}
+.big{font-size:3rem;font-weight:800;text-align:center;margin:4px 0}
+.c{text-align:center}
+.rev{text-align:left;margin:12px 0 16px;color:var(--mute);font-size:.95rem}
+[hidden]{display:none!important}
+@media (prefers-reduced-motion:reduce){.fill{transition:none}}
+</style>
+</head>
+<body>
+<main>
+<div class="top"><span id="n"></span><span id="s"></span></div>
+<div class="track"><div class="fill" id="f"></div></div>
+<div class="card" id="box"></div>
+</main>
+<script>
+/* word, opposite, emoji word, emoji opposite, sentence with gap, gap answer */
+const P=[
+["hot","cold","🔥","🧊","Tea is hot. Ice cream is ___.","cold"],
+["short","tall","🐭","🦒","A mouse is short. A giraffe is ___.","tall"],
+["fat","thin","🐷","🐍","The pig is fat. The snake is ___.","thin"],
+["big","small","🐘","🐜","An elephant is big. An ant is ___.","small"],
+["fast","slow","🐆","🐢","A cheetah is fast. A turtle is ___.","slow"],
+["easy","difficult","😊","😵","Counting to ten is easy. A hard test is ___.","difficult"],
+["long","short","🚂","✏️","The river is long. The street is ___.","short"],
+["old","new","📜","🆕","My grandpa’s car is old. My brother’s car is ___.","new"],
+["light","heavy","🪶","🪨","A feather is light. A rock is ___.","heavy"]];
+const opp={};P.forEach(([x,y])=>{(opp[x]=opp[x]||new Set()).add(y);(opp[y]=opp[y]||new Set()).add(x)});
+const words=Object.keys(opp);
+const $=s=>document.querySelector(s);
+const sh=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+let Q,i,sc,miss;
+function build(){
+ const ps=sh(P);
+ /* 5 opposite questions + 4 sentence questions from different pairs, plus 1 picture question */
+ Q=[];
+ ps.slice(0,5).forEach(p=>{const fw=Math.random()<.5;Q.push({t:"w",w:fw?p[0]:p[1],ok:fw?[...opp[p[0]]].filter(v=>v===p[1]):[...opp[p[1]]].filter(v=>v===p[0]),all:fw?opp[p[0]]:opp[p[1]],e:fw?p[2]:p[3]})});
+ ps.slice(5,9).forEach(p=>Q.push({t:"g",s:p[4],a:p[5],all:new Set([p[5]]),ex:opp[p[5]]}));
+ Q=sh(Q);i=0;sc=0;miss=[];show();
+}
+function show(){
+ const b=$("#box");
+ $("#f").style.width=(i/Q.length*100)+"%";
+ if(i>=Q.length){
+  $("#n").textContent="Finished";$("#s").textContent="";
+  const m=sc>=8?"Excellent!":sc>=5?"Good work! Try again for a higher score.":"Keep practising. Try again!";
+  b.innerHTML=`<div class="c"><div class="big">${sc} / ${Q.length}</div><p class="msg">${m}</p>${miss.length?`<p class="rev">Review: ${miss.join(" · ")}</p>`:""}<button class="go" id="again">Play again</button></div>`;
+  $("#again").onclick=build;return;
+ }
+ const q=Q[i];
+ $("#n").textContent=`Question ${i+1} of ${Q.length}`;$("#s").textContent=`Score: ${sc}`;
+ let head,ans,pool;
+ if(q.t==="w"){head=`<p class="pic">${q.e}</p><p class="q">The opposite of <b>${q.w}</b> is…</p>`;ans=q.all;pool=words.filter(x=>x!==q.w&&!opp[q.w].has(x))}
+ else{head=`<p class="q">${q.s.replace("___",'<span class="gap">?</span>')}</p>`;ans=q.all;pool=words.filter(x=>x!==q.a&&!q.ex.has(x))}
+ const correct=q.t==="w"?[...opp[q.w]][0]:q.a;
+ const opts=sh([correct,...sh(pool).slice(0,2)]);
+ b.innerHTML=head+`<div id="o"></div><p class="msg" id="fb"></p><button class="go" id="nx" hidden>${i===Q.length-1?"See score":"Next"}</button>`;
+ opts.forEach(t=>{
+  const o=document.createElement("button");o.className="tile";o.textContent=t;
+  o.onclick=()=>{
+   const good=q.t==="w"?opp[q.w].has(t):t===q.a;
+   $("#o").querySelectorAll("button").forEach(x=>{x.disabled=true;const g=q.t==="w"?opp[q.w].has(x.textContent):x.textContent===q.a;if(g)x.classList.add("ok")});
+   if(good){sc++;$("#fb").textContent="Correct!"}
+   else{o.classList.add("no");$("#fb").textContent=`Not quite. The answer is ${correct}.`;miss.push(q.t==="w"?`${q.w} ↔ ${correct}`:`${q.s.replace("___",correct)}`)}
+   $("#s").textContent=`Score: ${sc}`;$("#nx").hidden=false;$("#nx").focus();
+  };
+  $("#o").append(o);
+ });
+ $("#nx").onclick=()=>{i++;show()};
+}
+build();
+</script>
+</body>
+</html>
